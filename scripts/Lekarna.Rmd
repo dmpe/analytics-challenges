@@ -1,0 +1,37 @@
+---
+title: "Initial_Exploration"
+author: "dmpe"
+date: "1 dubna 2018"
+output: 
+  html_document: 
+    df_print: kable
+    highlight: pygments
+    theme: readable
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+```{r}
+library(tidyverse)
+library(caret)
+library(readxl)
+library(lubridate)
+```
+
+
+```{r cars}
+load_data <- 
+```
+
+## Including Plots
+
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
