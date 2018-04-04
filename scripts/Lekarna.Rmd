@@ -20,18 +20,25 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(caret)
 library(readxl)
+library(readr)
 library(lubridate)
+library(RSQLite)
 ```
 
+For SQL database
 
-```{r cars}
+```{r}
+con <- dbConnect(drv=RSQLite::SQLite(), dbname="YOURSQLITEFILE")
+## list all tables
+tables <- dbListTables(con)
 load_data <- 
+
 ```
 
-## Including Plots
+For Excel / CSV
 
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r}
+readEX <- read_excel("../data/", sheet = "")
 ```
 
