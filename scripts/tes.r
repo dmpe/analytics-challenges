@@ -47,7 +47,24 @@ ga_sessions <- read_csv("in/tables/ga_sessions.csv")
 ga_ana_pageviews <- read_csv("in/tables/google_analytics_pageview.csv")
 
 merged_data <- inner_join(ga_profiles, ga_sessions, by=c("id" = "idProfile"))
+#####################
 
+zbozi <- read_csv("in/tables/zbozi_cz.csv", col_types = cols(date = col_date(format = "%d.%m.%Y")))
+heureka_cz <- read_csv("in/tables/heureka_cz.csv")
+heureka_sk <- read_csv("in/tables/heureka_sk.csv")
+
+ggplot(zbozi, aes(impressions, clicks)) + geom_point() + 
+  geom_smooth(method = "lm", se = F) + 
+  ggtitle("Impressions & Clicks", subtitle = "") + xlab("Impressions") + ylab("clicks")
+  
+
+ggplot(zbozi, aes(cpc, position)) + geom_point() + 
+  geom_smooth(method = "lm", se = F) + 
+  ggtitle("Cpc & Position", subtitle = "") + xlab("Cpc") + ylab("Position")
+
+ggplot(zbozi, aes(spend, position)) + geom_point() + 
+  geom_smooth(method = "lm", se = F) + 
+  ggtitle("Spend & Position", subtitle = "") + xlab("Spend") + ylab("Position")
 
 
 
