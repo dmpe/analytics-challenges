@@ -2,6 +2,7 @@ library(plyr)
 library(tidyverse)
 library(reshape2)
 library(hms)
+library(lubridate)
 
 
 input_data <- read_csv(file = "in/tables/ga_transactions.csv")
@@ -62,7 +63,7 @@ ggplot(zbozi, aes(spend, position)) + geom_point() +
   geom_smooth(method = "lm", se = F) + 
   ggtitle("Spend & Position", subtitle = "") + xlab("Spend") + ylab("Position")
 
-##################### Load Heureka_cz/sk  & Zbozi_cz
+##################### Load Heureka_cz/sk
 heureka_cz <- read_csv("in/tables/heureka_cz.csv", 
                                           col_types = cols(cpc = col_double()), 
                                           locale = locale(decimal_mark = ","))
@@ -85,7 +86,6 @@ heureka_sk_conv$conversion_rates <- as.double(heureka_sk_conv$conversion_rates) 
 heureka_sk_conv$cpc_cz <- heureka_sk_conv$cpc * as.double(heureka_sk_conv$rate)
 heureka_sk_conv$spend_cz <- heureka_sk_conv$spend * as.double(heureka_sk_conv$rate)
 
-############ Process Heureka data
 heureka_sk_sm <- data.frame(heureka_sk_conv$date,
                   heureka_sk_conv$cpc_cz, 
                   heureka_sk_conv$spend_cz, 
@@ -96,24 +96,81 @@ heureka_cz_sm <- data.frame(heureka_cz$date,
                   heureka_cz$spend, 
                   heureka_cz$conversion_rates)
 
-mergedDF_heureka <- inner_join(heureka_sk_sm, heureka_cz_sm, by = c("heureka_sk_conv.date"="heureka_cz.date"))
+mergedDF_heureka <- inner_join(heureka_sk_sm, heureka_cz_sm, 
+                               by = c("heureka_sk_conv.date"="heureka_cz.date"))
 
-############ Process Zbozi data
+############ Load & Process Zbozi data
 zbozi <- read_csv("in/tables/zbozi_cz.csv", 
                   col_types = cols(date = col_date(format = "%d.%m.%Y")))
+
+names(zbozi)[names(zbozi) == 'spend'] <- 'zbozi_spend'
 df_zbozi_Spend <- zbozi[,c(2,7)]
 
+df_heureka_Zbozi_joined <- inner_join(mergedDF_heureka, df_zbozi_Spend, 
+                                      by = c("heureka_sk_conv.date"="date"))
 
-df_heureka_Zbozi_Spend <- inner_join(mergedDF_heureka, df_zbozi_Spend, by = c("heureka_sk_conv.date"="date"))
-df_heureka_Spend <- melt(df_heureka_Zbozi_Spend[,(c(3,6))])
+df_heureka_Zbozi_joined$CZ_SK_Spend <- df_heureka_Zbozi_joined$heureka_cz.spend + 
+  df_heureka_Zbozi_joined$heureka_sk_conv.spend_cz
+
+############ Melt
+#df_heureka_Zbozi_Spend <- melt(df_heureka_Zbozi_joined[,(c(3,6,8))])
+df_heureka_Zbozi_Spend <- melt(df_heureka_Zbozi_joined[,(c(8,10))])
 
 ############ Plot it
-ggplot(df_heureka_Zbozi_Spend, aes(variable, value)) + geom_col() + 
-  ggtitle("Money Spend on Heureka CZ/SK vs. Zbozi", subtitle = "") + 
-  xlab("Spend") + ylab("Position")
+ggplot(df_heureka_Zbozi_Spend) + 
+  geom_col(aes(variable, value), show.legend=F) + 
+  ggtitle("Expenditure on Heureka CZ&SK vs. Zbozi", subtitle = "16.Jan 2018 - 3.Mar 2018") + 
+  xlab("Marketing Channel") + ylab("Costs") +
+  theme(axis.line = element_line(colour = "darkblue", 
+                                size = 1, linetype = "solid")) +
+  scale_x_discrete(labels=c("Zbozi", "Heureka CZ/SK"))
+
+######################
+### For Month/week
+colnames(df_heureka_Zbozi_joined)
+df_heureka_Zbozi_joined$week <- strftime(df_heureka_Zbozi_joined$heureka_sk_conv.date, 
+                                         format = "%V")
+df_heureka_Zbozi_joined$heureka_sk_conv.date <- as.Date(df_heureka_Zbozi_joined$heureka_sk_conv.date)
+
+dfs <- df_heureka_Zbozi_joined[,c(1,8,10)]
+  
+df_s2 <- gather(dfs, key = variable, 
+                value = measurement, 
+                -heureka_sk_conv.date)
+
+ggplot(df_s2, aes(as.Date(heureka_sk_conv.date, format = "%b-%Y"), measurement, colour = variable)) + 
+  geom_line() +
+  ggtitle("Expenditure on Heureka CZ & SK vs. Zbozi", subtitle = "16.Jan 2018 - 3.Apr 2018") + 
+  xlab("Month") + ylab("Costs in (CZK)") + 
+  scale_y_continuous(breaks = c(10000, 20000, 30000, 40000, 50000, 60000)) +
+  scale_color_hue(name="Marketing Channel",
+                  labels=c("Heureka CZ & SK", "Zbozi.cz"))
 
 
-aes(variable, value, fill=ID, group=ID) + 
-  geom_bar(stat='identity', position='dodge')
+##################
+
+dfs <- df_heureka_Zbozi_joined[,c(1,8,10)]
+
+df_s3 <- gather(dfs, key = variable, 
+                value = measurement, 
+                -heureka_sk_conv.date)
+
+
+ggplot(df_s3, aes(as.Date(heureka_sk_conv.date, format = "%b-%Y"), measurement, colour = variable)) + 
+  geom_line() +
+  ggtitle("Expenditure on Heureka CZ & SK vs. Zbozi", subtitle = "16.Jan 2018 - 3.Apr 2018") + 
+  xlab("Month") + ylab("Costs in (CZK)") + 
+  scale_y_continuous(breaks = c(10000, 20000, 30000, 40000, 50000, 60000)) +
+  scale_color_hue(name="Marketing Channel",
+                  labels=c("Heureka CZ & SK", "Zbozi.cz"))
+
+
+
+
+
+
+
+
+
 
 
