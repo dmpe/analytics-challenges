@@ -62,15 +62,13 @@ ggplot(zbozi, aes(spend, position)) + geom_point() +
   geom_smooth(method = "lm", se = F) + 
   ggtitle("Spend & Position", subtitle = "") + xlab("Spend") + ylab("Position")
 
-#####################
-zbozi <- read_csv("in/tables/zbozi_cz.csv", col_types = cols(date = col_date(format = "%d.%m.%Y")))
+##################### Load Heureka_cz/sk  & Zbozi_cz
 heureka_cz <- read_csv("in/tables/heureka_cz.csv", 
                                           col_types = cols(cpc = col_double()), 
                                           locale = locale(decimal_mark = ","))
 heureka_cz$conversion_rates <- as.double(heureka_cz$conversion_rates) / 100
 
 heureka_sk <- read_csv("in/tables/heureka_sk.csv")
-heureka_cz$conversion_rates <- as.double(heureka_cz$conversion_rates) / 10000
 heureka_sk$conversion_rates <- as.double(heureka_sk$conversion_rates) / 10000
 
 heureka_sk_conv <- read_csv("out/tables/heureka_fx_conv.csv", 
@@ -87,19 +85,35 @@ heureka_sk_conv$conversion_rates <- as.double(heureka_sk_conv$conversion_rates) 
 heureka_sk_conv$cpc_cz <- heureka_sk_conv$cpc * as.double(heureka_sk_conv$rate)
 heureka_sk_conv$spend_cz <- heureka_sk_conv$spend * as.double(heureka_sk_conv$rate)
 
+############ Process Heureka data
+heureka_sk_sm <- data.frame(heureka_sk_conv$date,
+                  heureka_sk_conv$cpc_cz, 
+                  heureka_sk_conv$spend_cz, 
+                  heureka_sk_conv$conversion_rates) 
 
-df2 <- data.frame(heureka_sk_conv$cpc_cz, heureka_sk_conv$spend_cz, 
-                  heureka_sk_conv$conversion_rates, heureka_cz$cpc,
-                  heureka_cz$spend, heureka_cz$conversion_rates)
-colnames(df2) <- c("heu_sk_cpc", "heu_sk_spend", 
-                   "heu_sk_conversion_rates", "heu_cz_cpc", 
-                   "heu_cz_spend", "heu_cz_conversion_rates")
+heureka_cz_sm <- data.frame(heureka_cz$date,
+                  heureka_cz$cpc,
+                  heureka_cz$spend, 
+                  heureka_cz$conversion_rates)
 
-dfbarspend <- melt(df2[,(c(2,5))])
+mergedDF_heureka <- inner_join(heureka_sk_sm, heureka_cz_sm, by = c("heureka_sk_conv.date"="heureka_cz.date"))
 
-ggplot(dfbarspend, aes(variable, value)) + geom_col() + 
+############ Process Zbozi data
+zbozi <- read_csv("in/tables/zbozi_cz.csv", 
+                  col_types = cols(date = col_date(format = "%d.%m.%Y")))
+df_zbozi_Spend <- zbozi[,c(2,7)]
+
+
+df_heureka_Zbozi_Spend <- inner_join(mergedDF_heureka, df_zbozi_Spend, by = c("heureka_sk_conv.date"="date"))
+df_heureka_Spend <- melt(df_heureka_Zbozi_Spend[,(c(3,6))])
+
+############ Plot it
+ggplot(df_heureka_Zbozi_Spend, aes(variable, value)) + geom_col() + 
   ggtitle("Money Spend on Heureka CZ/SK vs. Zbozi", subtitle = "") + 
   xlab("Spend") + ylab("Position")
 
+
+aes(variable, value, fill=ID, group=ID) + 
+  geom_bar(stat='identity', position='dodge')
 
 
