@@ -1,5 +1,5 @@
+library(plyr)
 library(tidyverse)
-library(ggthemes)
 library(reshape2)
 library(hms)
 
@@ -47,16 +47,12 @@ ga_sessions <- read_csv("in/tables/ga_sessions.csv")
 ga_ana_pageviews <- read_csv("in/tables/google_analytics_pageview.csv")
 
 merged_data <- inner_join(ga_profiles, ga_sessions, by=c("id" = "idProfile"))
-#####################
 
-zbozi <- read_csv("in/tables/zbozi_cz.csv", col_types = cols(date = col_date(format = "%d.%m.%Y")))
-heureka_cz <- read_csv("in/tables/heureka_cz.csv")
-heureka_sk <- read_csv("in/tables/heureka_sk.csv")
-
+####################
 ggplot(zbozi, aes(impressions, clicks)) + geom_point() + 
   geom_smooth(method = "lm", se = F) + 
   ggtitle("Impressions & Clicks", subtitle = "") + xlab("Impressions") + ylab("clicks")
-  
+
 
 ggplot(zbozi, aes(cpc, position)) + geom_point() + 
   geom_smooth(method = "lm", se = F) + 
@@ -66,7 +62,44 @@ ggplot(zbozi, aes(spend, position)) + geom_point() +
   geom_smooth(method = "lm", se = F) + 
   ggtitle("Spend & Position", subtitle = "") + xlab("Spend") + ylab("Position")
 
+#####################
+zbozi <- read_csv("in/tables/zbozi_cz.csv", col_types = cols(date = col_date(format = "%d.%m.%Y")))
+heureka_cz <- read_csv("in/tables/heureka_cz.csv", 
+                                          col_types = cols(cpc = col_double()), 
+                                          locale = locale(decimal_mark = ","))
+heureka_cz$conversion_rates <- as.double(heureka_cz$conversion_rates) / 100
 
+heureka_sk <- read_csv("in/tables/heureka_sk.csv")
+heureka_cz$conversion_rates <- as.double(heureka_cz$conversion_rates) / 10000
+heureka_sk$conversion_rates <- as.double(heureka_sk$conversion_rates) / 10000
+
+heureka_sk_conv <- read_csv("out/tables/heureka_fx_conv.csv", 
+                            col_types = cols(cpc = col_double(), 
+                                             rate = col_character()), 
+                            locale = locale(decimal_mark = ","))
+
+exchange <- read_csv("in/tables/exchange_rates.csv", 
+                     col_types = cols(date = col_date(format = "%Y-%m-%d"))) %>% 
+  filter(currency_orderby == 1)
+
+heureka_sk <- left_join(heureka_sk, exchange, by = c("date"="date"))
+heureka_sk_conv$conversion_rates <- as.double(heureka_sk_conv$conversion_rates) / 10000
+heureka_sk_conv$cpc_cz <- heureka_sk_conv$cpc * as.double(heureka_sk_conv$rate)
+heureka_sk_conv$spend_cz <- heureka_sk_conv$spend * as.double(heureka_sk_conv$rate)
+
+
+df2 <- data.frame(heureka_sk_conv$cpc_cz, heureka_sk_conv$spend_cz, 
+                  heureka_sk_conv$conversion_rates, heureka_cz$cpc,
+                  heureka_cz$spend, heureka_cz$conversion_rates)
+colnames(df2) <- c("heu_sk_cpc", "heu_sk_spend", 
+                   "heu_sk_conversion_rates", "heu_cz_cpc", 
+                   "heu_cz_spend", "heu_cz_conversion_rates")
+
+dfbarspend <- melt(df2[,(c(2,5))])
+
+ggplot(dfbarspend, aes(variable, value)) + geom_col() + 
+  ggtitle("Money Spend on Heureka CZ/SK vs. Zbozi", subtitle = "") + 
+  xlab("Spend") + ylab("Position")
 
 
 
