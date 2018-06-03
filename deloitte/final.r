@@ -163,14 +163,3 @@ ggplot(df_s3, aes(as.Date(heureka_sk_conv.date, format = "%b-%Y"), measurement, 
   scale_y_continuous(breaks = c(10000, 20000, 30000, 40000, 50000, 60000)) +
   scale_color_hue(name="Marketing Channel",
                   labels=c("Heureka CZ & SK", "Zbozi.cz"))
-
-
-
-
-
-
-
-
-
-
-
