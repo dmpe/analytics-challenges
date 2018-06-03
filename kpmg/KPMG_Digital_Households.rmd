@@ -1,0 +1,70 @@
+---
+title: "KPMG Digital households"
+author: '@dmpe'
+date: "6/3/2018"
+output: 
+  html_document: 
+    df_print: kable
+    fig_caption: yes
+    highlight: pygments
+    number_sections: yes
+    theme: journal
+    toc: yes
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=T}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readxl)
+```
+
+## Read excel sheets
+
+```{r}
+wh_excel_test <- read_xlsx("Czech_Digital_Household_2018_R_Challenge.xlsx", 
+                           sheet = "VALUES_Sample_Test", 
+                           range = "A1:EQ509")
+
+wh_excel_control <- read_xlsx("Czech_Digital_Household_2018_R_Challenge.xlsx", 
+                              sheet = "VALUES_Sample_Control", 
+                              range = "A1:EQ103", na = "missing value")
+
+wh_excel_test2 <- wh_excel_test[c(-1,-2), ]
+
+wh_excel_control2 <- wh_excel_control[c(-1,-2), ]
+```
+
+### Data Preparation - Conversion to factors
+
+First, to factors
+
+```{r}
+wh_excel_test2 <- sapply(wh_excel_test2[, 2:ncol(wh_excel_test2)], as.factor)
+
+summary(wh_excel_test2)
+```
+
+```{r}
+wh_excel_control2 <- sapply(wh_excel_control2[, 2:ncol(wh_excel_control2)], as.factor)
+
+summary(wh_excel_control2)
+```
+
+TODO:
+-NA, -1/complete cases
+
+Extract demo details from both group
+
+```{r}
+te_demo <- wh_excel_test[,c(1,tail(seq_along(wh_excel_test),10))]
+con_demo <- wh_excel_control[,c(1,tail(seq_along(wh_excel_control),10))]
+```
+
+Tidy data
+
+```{r}
+molten_test <- gather(wh_excel_test2, key = Question_ID, value = Answer, 2:137)
+```
+
